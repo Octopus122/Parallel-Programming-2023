@@ -5,7 +5,7 @@
 #include<thread>
 
 int main(){
-    std::string filename = "sourse/cat1.jpg";//
+    std::string filename = "../sourse/cat1.jpg";//
     std::ifstream f;
     f.open(filename, std::ifstream::binary);
     std::vector<char> F;
