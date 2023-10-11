@@ -3,8 +3,7 @@
 #include<fstream>
 #include<vector>
 #include<ctime>
-// #include <windows.h>
-#include<pthread.h>
+#include <windows.h>
 
 using std::vector;
 using std::ifstream;
@@ -14,13 +13,14 @@ using std::cin;
 using std::endl;
 
 int B = 9;
-long threadID[9];
+LPDWORD threadID [9];
 
 struct threadDATA {
     int ThreadCount; //номер потока
     int ThreadNumber; //число потоков
     vector<char>&Arr;
 };
+
 vector<char> ReadFile(std::string FileName){
     vector<char> F;
 
@@ -36,8 +36,7 @@ vector<char> ReadFile(std::string FileName){
     return F;
 };
 
-void* ThreadWork(void *params){
-    // cout<<d->ThreadCount<<endl; // для проверки, перемешиваются ли потоки
+DWORD WINAPI ThreadWork(void *params){
     threadDATA * d = (threadDATA*)params;
     int FileSize = d->Arr.size();
     int ThreadAmount = FileSize/d->ThreadNumber; //целое от деления
@@ -58,8 +57,7 @@ void* ThreadWork(void *params){
         // std::cout<<d->ThreadCount<<std::endl;
     }
     return 0;
-};
-
+}
 
 void WriteFile(std::string FileName, vector<char> F){
     ofstream f;
@@ -92,32 +90,25 @@ void TestProgram(std::string filename){
     }
     int stop = clock();
 
-    WriteFile("output2", F);
+    WriteFile("output2.binary", F);
     
     std::cout<<"Computing time without threads = "<<stop - start<<std::endl;
-};
+}
 
 int main(){
-    std::string filename = "dog.jpg";
+    std::string filename = "../sourse/cosmos.jpg";
     vector<char> F = ReadFile(filename);
-    int start = clock();
     
-    pthread_t Threads[B];
-    void * status;
-    // cout<<"work";
+    HANDLE Threads[B]; 
     for (auto i = 0; i < B; ++i){
-        threadDATA *p = new threadDATA {i,B, F};
-        pthread_create(&Threads[i], NULL, &ThreadWork,(void*)p);
-        // delete p;
+        threadDATA *p = new threadDATA {i, B, F};
+        Threads[i] = CreateThread(NULL, 0, ThreadWork, (void*)p, 0, threadID[i]);
+
     }
-    // cout<<"work";
-    for (auto i = 0; i < B; ++i){
-        pthread_join(Threads[i], &status);
-    }
-    int stop = clock();
+    WaitForMultipleObjects(B,Threads, true, INFINITE);
     WriteFile("output1.binary",F);
     
     TestProgram(filename);
-
     return 0;
 }
+

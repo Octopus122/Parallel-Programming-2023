@@ -2,25 +2,42 @@
 #include<string>
 #include<fstream>
 #include<vector>
+#include<thread>
 #include<ctime>
-// #include <windows.h>
-#include<pthread.h>
 
 using std::vector;
 using std::ifstream;
 using std::ofstream;
-using std::cout;
-using std::cin;
-using std::endl;
+
+vector<char> ReadFile(std::string FileName);
+void ThreadWork(int ThreadNumber, int ThreadCount, vector<char> &Arr);
+
+void WriteFile(std::string FileName, vector<char> F);
+void TestProgram(std::string filaname); 
 
 int B = 9;
-long threadID[9];
 
-struct threadDATA {
-    int ThreadCount; //номер потока
-    int ThreadNumber; //число потоков
-    vector<char>&Arr;
-};
+int main(){
+    std::string filename = "../sourse/cosmos.jpg";
+    vector<char> F = ReadFile(filename);
+
+    int start = clock();
+    std::thread Threads[B];
+    for (auto i = 0; i < B; ++i){
+        Threads[i] = std::thread(ThreadWork, B, i, std::ref(F));
+    }
+    for (auto i = 0; i < B; ++i){
+        Threads[i].join();
+    }
+    int stop = clock();
+    WriteFile("output1.binary",F);
+    
+    // std::cout<<"Time with thread = "<<stop - start<<std::endl;
+    TestProgram(filename);
+
+    return 0;
+}
+
 vector<char> ReadFile(std::string FileName){
     vector<char> F;
 
@@ -34,32 +51,28 @@ vector<char> ReadFile(std::string FileName){
     }
     f.close();
     return F;
-};
+}
 
-void* ThreadWork(void *params){
-    // cout<<d->ThreadCount<<endl; // для проверки, перемешиваются ли потоки
-    threadDATA * d = (threadDATA*)params;
-    int FileSize = d->Arr.size();
-    int ThreadAmount = FileSize/d->ThreadNumber; //целое от деления
-    int AdditionalAmount = FileSize%d->ThreadNumber;
+void ThreadWork(int ThreadNumber, int ThreadCount, vector<char> &Arr){
+    int FileSize = Arr.size();
+    int ThreadAmount = FileSize/ThreadNumber; //целое от деления
+    int AdditionalAmount = FileSize%ThreadNumber;
     int FirstByte, LastByte;
-    if (d->ThreadCount<AdditionalAmount) {
-        FirstByte = (ThreadAmount+1)*d->ThreadCount;
+    if (ThreadCount<AdditionalAmount) {
+        FirstByte = (ThreadAmount+1)*ThreadCount;
         LastByte = FirstByte + ThreadAmount + 1;
     }
     else {
-        FirstByte = ThreadAmount*d->ThreadCount+AdditionalAmount;
+        FirstByte = ThreadAmount*ThreadCount+AdditionalAmount;
         LastByte = FirstByte + ThreadAmount;
     }
     
     int x = B;
     for (auto i = FirstByte; i < LastByte; ++i){
-        d->Arr[i] = (i*x)&255;
+        Arr[i] = (i*x)&255;
         // std::cout<<d->ThreadCount<<std::endl;
     }
-    return 0;
-};
-
+}
 
 void WriteFile(std::string FileName, vector<char> F){
     ofstream f;
@@ -92,32 +105,7 @@ void TestProgram(std::string filename){
     }
     int stop = clock();
 
-    WriteFile("output2", F);
+    WriteFile("output2.binary", F);
     
     std::cout<<"Computing time without threads = "<<stop - start<<std::endl;
-};
-
-int main(){
-    std::string filename = "dog.jpg";
-    vector<char> F = ReadFile(filename);
-    int start = clock();
-    
-    pthread_t Threads[B];
-    void * status;
-    // cout<<"work";
-    for (auto i = 0; i < B; ++i){
-        threadDATA *p = new threadDATA {i,B, F};
-        pthread_create(&Threads[i], NULL, &ThreadWork,(void*)p);
-        // delete p;
-    }
-    // cout<<"work";
-    for (auto i = 0; i < B; ++i){
-        pthread_join(Threads[i], &status);
-    }
-    int stop = clock();
-    WriteFile("output1.binary",F);
-    
-    TestProgram(filename);
-
-    return 0;
 }
